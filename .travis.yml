@@ -1,43 +1,63 @@
-language: java
-jdk:
-  - openjdk7
-  - oraclejdk8
-
 addons:
   apt:
     packages:
-      - oracle-java8-installer
-
-sudo: false
-
-notifications:
-  email:
-    - mgrigorov@apache.org
-  irc:
-    channels:
-      - "chat.freenode.net##wicket"
-    template:
-      - "%{repository}, %{author}, (%{commit}) : %{message} "
-      - "Build details: %{build_url}"
-      - "Duration: %{duration}"
-
-env:
-  global:
-    - secure: "I0PbW4iQlyMO/yztGnZ/qiaMm7IS51QqAGhA5HQYKVh/ywNpQpVrpZaFRyf8OlBAemqKmOTp3EcvR225hb6RQCFilkN2vCMbMO/b7BbMRVhfV6PlpkfiuP2EehgT5vXl74tF/WbnijbvLpQppLPqbC0yYKOVplVcNEDs0LcVLfk="
-    - secure: "PKgEV+4JuiCQ+69lYz8kDXLVKxn107EzGd+jq0BPxZK09LqMsvQpvkF0EZGF0gk1xXt3Gn2itVeKPbcxgufccuzVNoQnnXljvKn9+6ITTKg2HZA7UP4MrdOhhw1m+GMRKYVEdPz6qcG4FXlBfw3zgrmiZZ89K6mggPFeyf1VFDw="
-
+    - oracle-java8-installer
+  artifacts:
+    debug: true
+    paths:
+    - libs.zip
+    - build.zip
+    - testbuild.zip
+    - jacoco.exec
+    target_paths: c061b5ba-bc1d-4c99-ace1-56d626dbfdbf
+after_success:
+- ' wget --content-disposition http://search.maven.org/remotecontent?filepath=org/jacoco/jacoco/0.7.7.201606060606/jacoco-0.7.7.201606060606.zip '
+- ' unzip -o jacoco-0.7.7.201606060606.zip  '
+- ' cd lib  '
+- ' mv * ../  '
+- ' cd ..  '
+- ' chmod a+x *  '
+- ' cd $PWD  '
+- ' rm  ''jacoco.exec'''
+- ' export JAVA_TOOL_OPTIONS=-javaagent:$PWD/jacocoagent.jar=destfile=$PWD/jacoco.exec,append=true  '
+- ' travis_wait 720 mvn  test -Dmaven.test.failure.ignore=true -Djacoco.skip=true
+  -Dcobertura.skip=true -Dmaven.clover.skip=true -Dmaven.javadoc.skip=true -Drat.skip=true
+  -Drat.ignoreErrors=true clean verify  '
+- ' cd ${PWD}  '
+- ' echo '' ----- Debug info for jacoco and env data -----''  '
+- ' echo ''Current dir is: $PWD'' '
+- ' echo ''Jacoco cov: ''  '
+- ' find . -name ''*.exec''  '
+- ' echo '' ----------------------------------------------'' '
+- ./df-build.sh
+before_install: []
+before_script:
+- echo "MAVEN_OPTS='-Xmx2g -XX:MaxPermSize=512m'" > ~/.mavenrc
+branches: ''
 cache:
   directories:
-    - $HOME/.m2
-
+  - $HOME/.m2
+  - $HOME/.m2
+env:
+  global:
+  - secure: I0PbW4iQlyMO/yztGnZ/qiaMm7IS51QqAGhA5HQYKVh/ywNpQpVrpZaFRyf8OlBAemqKmOTp3EcvR225hb6RQCFilkN2vCMbMO/b7BbMRVhfV6PlpkfiuP2EehgT5vXl74tF/WbnijbvLpQppLPqbC0yYKOVplVcNEDs0LcVLfk=
+  - secure: PKgEV+4JuiCQ+69lYz8kDXLVKxn107EzGd+jq0BPxZK09LqMsvQpvkF0EZGF0gk1xXt3Gn2itVeKPbcxgufccuzVNoQnnXljvKn9+6ITTKg2HZA7UP4MrdOhhw1m+GMRKYVEdPz6qcG4FXlBfw3zgrmiZZ89K6mggPFeyf1VFDw=
 install: true
-
-before_script:
-  - echo "MAVEN_OPTS='-Xmx2g -XX:MaxPermSize=512m'" > ~/.mavenrc
-
+jdk:
+- oraclejdk8
+language: java
+notifications:
+  webhooks:
+    on_failure: always
+    on_start: always
+    on_success: always
+    urls:
+    - http://insights-portal-insights-service-webserver-dev.public-swarm.devfactory.com/travisWebHookListener?build_id=c061b5ba-bc1d-4c99-ace1-56d626dbfdbf
 script:
-  - "DEPLOY_OR_TEST=install"
-  - '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && DEPLOY_OR_TEST=deploy'
-  - "echo DEPLOY_OR_TEST=$DEPLOY_OR_TEST"
-  - "cp ./config/toolchains.xml $HOME/.m2"
-  - "mvn -s sonatype-settings.xml clean $DEPLOY_OR_TEST -Dsource.skip=true -B -V --quiet"
+- DEPLOY_OR_TEST=install
+- '[ "${TRAVIS_PULL_REQUEST}" = "false" ] && DEPLOY_OR_TEST=deploy'
+- echo DEPLOY_OR_TEST=$DEPLOY_OR_TEST
+- cp ./config/toolchains.xml $HOME/.m2
+- mvn -s sonatype-settings.xml clean $DEPLOY_OR_TEST -Dsource.skip=true -B -V --quiet
+sudo: false
+# Modified by Insights Service at 2016-11-23 05:50:06.196331
